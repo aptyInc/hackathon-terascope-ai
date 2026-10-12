@@ -629,11 +629,12 @@ with sync_playwright() as p:
     z = pg.evaluate("() => map.getZoom()")
     check(10.5 < z < 13.5, f"map framed on the whole corridor (zoom {z:.1f})")
     pre = pg.eval_on_selector_all("#presets button", "els => els.map(e => [e.id, e.textContent.replace('▶', ''), e.title])")
-    check([x[:2] for x in pre] == [["p-nallagandla", "Flyover at Nallagandla"], ["p-dlf", "Flyover at ISB Rd / DLF"],
+    check([x[:2] for x in pre] == [["p-nallagandla", "Underpass at Nallagandla"], ["p-dlf", "Flyover at ISB Rd / DLF"],
+                                   ["p-rethibowli", "Signal timing at Rethibowli"], ["p-rethibowli-oneway", "One-way side road at Rethibowli"],
                                    ["p-nanal", "One flyover over Nanal Nagar + Rethibowli"], ["p-dlf-retime", "Give DLF's side roads more green (watch the ripple)"]],
-          f"4 quick demo buttons: {[x[1] for x in pre]}")
-    check(all(len(x[2]) > 40 and "Replaces your list of changes" in x[2] for x in pre) and "420 m" in pre[2][2] and "70%" in pre[3][2], "each demo explained in a tooltip")
-    check(pg.evaluate("() => Object.keys(PRESETS).length === 4 && !document.getElementById('p-tolichowki') && !document.getElementById('p-khajaguda')"), "Tolichowki and Khajaguda demos gone")
+          f"6 quick demo buttons: {[x[1] for x in pre]}")
+    check(all(len(x[2]) > 40 and "Replaces your list of changes" in x[2] for x in pre) and "70%" in pre[2][2] and "420 m" in pre[4][2] and "70%" in pre[5][2], "each demo explained in a tooltip")
+    check(pg.evaluate("() => Object.keys(PRESETS).length === 6 && !document.getElementById('p-tolichowki') && !document.getElementById('p-khajaguda')"), "Tolichowki and Khajaguda demos gone")
     heads = pg.eval_on_selector_all("#left h2", "els => els.map(e => e.textContent.trim().toLowerCase())")
     order = [next((i for i, h in enumerate(heads) if h.startswith(w)), -1) for w in ("quick actions", "simulated", "junctions", "decision")]
     check(all(i >= 0 for i in order) and order == sorted(order), f"controls in order: Quick actions, Simulated, Junctions, Decision: {heads}")
@@ -1134,7 +1135,7 @@ with sync_playwright() as p:
     check(pg.is_visible("#busy") and RUN_MSG in pg.inner_text("#busy"), f"waiting note: {pg.inner_text('#busy')}")
     e1 = pg.inner_text("#elapsed"); pg.wait_for_timeout(2100); e2 = pg.inner_text("#elapsed")
     check(e1 == "0:00" and e2 in ("0:02", "0:03"), f"elapsed counter ticks: {e1} → {e2}")
-    check(all(pg.is_disabled(x) for x in ("#sim-today", "#sim-changes", "#p-nallagandla", "#p-dlf", "#p-nanal", "#p-dlf-retime")), "run buttons wait while simulating")
+    check(all(pg.is_disabled(x) for x in ("#sim-today", "#sim-changes", "#p-nallagandla", "#p-dlf", "#p-nanal", "#p-dlf-retime", "#p-rethibowli", "#p-rethibowli-oneway")), "run buttons wait while simulating")
     check(not pg.is_disabled("#iv-add") and not pg.is_disabled("#overview") and not pg.is_disabled("#t-route"), "the rest stays usable")
     check(ivs(pg) == ["2 · ISB Rd / DLF jn: Signal timing, 120 s cycle, 30% green to main road"] and pg.input_value("#iv-j") == "j02", f"preset filled the list: {ivs(pg)}")
     pg.uncheck("#t-route"); pg.wait_for_timeout(200); off = layer(pg, "route")
@@ -1155,9 +1156,9 @@ with sync_playwright() as p:
     check(mid and abs(mid[0] - 1200) < 30 and PTS["j08"]["lon"] < mid[1] < PTS["j09"]["lon"], f"one 1.2 km flyover drawn centred between Nanal Nagar and Rethibowli: {mid}")
     check("420 m apart" in pg.inner_text("#iv-merge") and has_pins(pg) == ["8", "9"], "one flyover note, markers 8 and 9")
     check("flyover, 2 lanes, 1200 m, over nanal nagar + rethibowli" in pg.inner_text("#deltas").lower(), f"headline names the change: {pg.inner_text('#deltas .headline')[:120]}")
-    for pid, jid in (("#p-nallagandla", "j01"), ("#p-dlf", "j02")):
+    for pid, jid, kind in (("#p-nallagandla", "j01", "underpass"), ("#p-dlf", "j02", "flyover")):
         pg.click(pid); wait_status(pg, ["simulated", "failed"], 30); pg.wait_for_timeout(200)
-        check(bodies[-1]["interventions"] == [{"junction_id": jid, "kind": "flyover", "params": {"lanes": 2, "length_m": 600}}] and pg.input_value("#iv-j") == jid
+        check(bodies[-1]["interventions"] == [{"junction_id": jid, "kind": kind, "params": {"lanes": 2, "length_m": 600}}] and pg.input_value("#iv-j") == jid
               and pg.is_hidden("#iv-merge") and pg.is_hidden("#iv-exists"), f"{pid} body: {bodies[-1]}")
     # a flyover where one already exists: note first, then the result's warning, readable, in the trip panel and step 3
     pg.wait_for_timeout(2500); settle(pg)   # playback's own camera flight selects a junction in the picker ~1.5 s after a run

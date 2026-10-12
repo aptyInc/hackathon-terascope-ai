@@ -53,8 +53,10 @@ On the corridor screen (one screen, branded **Terascope AI**; on screen every nu
 | Quick action / what-if | Trip | Change |
 |---|---|---|
 | Today's roads (**Start engine**) | 56.6 min | real data 56.2 on the same 21.6 km |
-| Flyover at Nallagandla (2 lanes, 600 m) | 54.6 min | −2.0 |
-| Flyover at ISB Rd / DLF (2 lanes, 600 m) | 54.7 min | −1.9 |
+| Underpass at Nallagandla (2 lanes, 600 m) | 54.5 min | −2.1 |
+| Flyover at ISB Rd / DLF (2 lanes, 600 m) | 54.6 min | −1.9 |
+| Signal timing at Rethibowli (120 s cycle, 70% green to the main road) | 55.8 min | −0.8 |
+| One-way side road at Rethibowli (200 m, towards the junction) | 55.7 min | −0.9 |
 | One flyover over Nanal Nagar + Rethibowli (1.2 km) | 53.5 min | −3.1 (still saves at 110% traffic) |
 | Give DLF's side roads more green (30% to the main road) | 57.3 min | +0.7 (ripple: the queue before DLF) |
 | Light rain / heavy rain, today's roads | 58.1 / 63.8 min | +1.5 / +7.2 (about 2.7 of it at reported water-logging points) |

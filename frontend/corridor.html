@@ -398,8 +398,10 @@
 
   <h2 style="margin-top:12px">Quick actions</h2>
   <div id="presets">
-    <button id="p-nallagandla" title="A 600 m, 2-lane flyover lifts the main road over the Nallagandla signal, the first signal of the trip. Replaces your list of changes, then simulates."><b>▶</b>Flyover at Nallagandla</button>
+    <button id="p-nallagandla" title="A 600 m, 2-lane underpass takes the main road under the Nallagandla signal, the first signal of the trip. Replaces your list of changes, then simulates."><b>▶</b>Underpass at Nallagandla</button>
     <button id="p-dlf" title="A 600 m, 2-lane flyover lifts the main road over the busy ISB Rd / DLF signal. Replaces your list of changes, then simulates."><b>▶</b>Flyover at ISB Rd / DLF</button>
+    <button id="p-rethibowli" title="Retime the Rethibowli signal: a 120 s cycle with 70% of the green to the main road. The cheapest fix: no construction. Replaces your list of changes, then simulates."><b>▶</b>Signal timing at Rethibowli</button>
+    <button id="p-rethibowli-oneway" title="Make the Inner Ring Road side road at Rethibowli one-way towards the junction for 200 m, so the signal needs one phase less. Signage and markings only. Replaces your list of changes, then simulates."><b>▶</b>One-way side road at Rethibowli</button>
     <button id="p-nanal" title="Nanal Nagar and Rethibowli are only 420 m apart, so one 1.2 km flyover clears both signals. Replaces your list of changes, then simulates."><b>▶</b>One flyover over Nanal Nagar + Rethibowli</button>
     <button id="p-dlf-retime" title="The DLF signal gives the side roads 70% of the green and the main road 30%. Watch the main-road queue spread back towards the junctions before it. Replaces your list of changes, then simulates."><b>▶</b>Give DLF's side roads more green (watch the ripple)</button>
   </div>
@@ -584,8 +586,10 @@ const NANAL_PAIR = ["j08", "j09"];   // Nanal Nagar and Rethibowli: about 420 m 
 const NANAL_FLYOVER = () => ({ junction_id: "j08", kind: "flyover", params: { lanes: 2, length_m: 1200 } });
 // Quick demos: the backend has these exact requests cached, so keep the params as they are.
 const PRESETS = {
-  "p-nallagandla": [{ junction_id: "j01", kind: "flyover", params: { lanes: 2, length_m: 600 } }],
+  "p-nallagandla": [{ junction_id: "j01", kind: "underpass", params: { lanes: 2, length_m: 600 } }],
   "p-dlf": [{ junction_id: "j02", kind: "flyover", params: { lanes: 2, length_m: 600 } }],
+  "p-rethibowli": [{ junction_id: "j09", kind: "signal_retime", params: { cycle_s: 120, corridor_green_share: 0.7 } }],
+  "p-rethibowli-oneway": [{ junction_id: "j09", kind: "one_way", params: { direction: "in" } }],
   "p-nanal": [NANAL_FLYOVER()],
   "p-dlf-retime": [{ junction_id: "j02", kind: "signal_retime", params: { cycle_s: 120, corridor_green_share: 0.3 } }],
 };
@@ -618,7 +622,8 @@ const markers = {};
 document.body.classList.add("badges-on");   // live delay badges on the junction pins (layer "Delay badges on junctions")
 // Visible text never names the data vendor: real data, simulated data. Labels that come from the API are passed through this.
 const plain = t => String(t ?? "").replace(/TomTom live/g, "real data · live").replace(/TomTom['’]s/g, "real data's").replace(/TomTom/g, "real data")
-  .replace(/typical July day/gi, "typical day").replace(/\bJuly 2026 average\b/g, "typical-day average").replace(/\bJuly( 2026)?\b/g, "typical day");
+  .replace(/July[’']s wettest hours/g, "the wettest hours in the data").replace(/, no waterlogging\)/g, "; reported water-logging hotspots slow further, reported not measured)")
+  .replace(/typical[- ]July[- ]day/gi, "typical day").replace(/\bJuly 2026 average\b/g, "typical-day average").replace(/\bJuly( 2026)?\b/g, "typical day");
 
 class HttpError extends Error { constructor(status, msg, detail) { super(msg); this.status = status; this.detail = detail; } }
 async function failure(path, r) {   // the server's own message: plain text, or FastAPI's {"detail": ...}
