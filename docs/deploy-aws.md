@@ -157,4 +157,4 @@ m7i-flex.large demo server for about a month; stop it when nobody is demoing.
 - DNS (Hostinger, hPanel → Domains → terascope.live → DNS records): **A record `app` → 13.237.4.166**, TTL 300. The site at terascope.live / www is untouched.
 - On the server (via `aws ssm send-command`): `apt-get install certbot python3-certbot-nginx`; nginx `server_name app.terascope.live 13.237.4.166 _;`; `certbot --nginx -d app.terascope.live --non-interactive --agree-tos --register-unsafely-without-email --redirect`. Certificate from Let's Encrypt, valid to 8 Jan 2027, renewed by `certbot.timer`. HTTP redirects to HTTPS; the vehicle stream runs over `wss://`.
 - URL: **https://app.terascope.live/** (the raw IP still answers on HTTP).
-- If the instance is replaced, re-run the two certbot lines above after pointing the A record at the new Elastic IP.
+- Redeploys keep https: `server_setup.sh` re-installs the certificate when it exists. If the instance is replaced, re-run the two certbot lines above after pointing the A record at the new Elastic IP.

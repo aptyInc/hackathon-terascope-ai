@@ -45,6 +45,11 @@ install -m 755 "$APP/deploy/aws/terascope-sync.sh" /usr/local/bin/terascope-sync
 install -m 644 "$APP/deploy/aws/nginx-terascope.conf" /etc/nginx/sites-available/terascope
 ln -sf /etc/nginx/sites-available/terascope /etc/nginx/sites-enabled/terascope
 rm -f /etc/nginx/sites-enabled/default
+# the config above is plain http: once app.terascope.live has its certificate, put https (and the http redirect) back
+if [ -d /etc/letsencrypt/live/app.terascope.live ] && command -v certbot >/dev/null; then
+  sed -i "s/server_name _;/server_name app.terascope.live 13.237.4.166 _;/" /etc/nginx/sites-available/terascope
+  certbot --nginx -d app.terascope.live --non-interactive --agree-tos --register-unsafely-without-email --redirect --reinstall >/dev/null
+fi
 nginx -t
 chown -R ubuntu:ubuntu "$APP" /var/tmp/terascope
 systemctl daemon-reload
