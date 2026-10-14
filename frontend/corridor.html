@@ -219,6 +219,10 @@
   #follow-card { font-size: 12px; border-top: 1px solid var(--line); margin-top: 3px; padding-top: 6px; }
   #follow-card .fc-hd { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
   #follow-card .fc-hd b { font-size: 12.5px; }
+  #follow-card .fc-speed { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  #follow-card .fc-speed button { padding: 0 8px; }
+  #follow-card .fc-speed b { min-width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
+  #follow-card .ftimer { font-variant-numeric: tabular-nums; font-weight: 600; }
   #follow-card .fc-hd button { height: 24px; padding: 0 10px; font-size: 11.5px; flex: none; }
   .fbar { position: relative; height: 6px; margin: 9px 6px 4px; border-radius: 3px; background: oklch(1 0 0 / .12); }
   .fbar .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, var(--sim), var(--t-orange)); }
@@ -382,7 +386,7 @@
   </div>
   <small id="clock" class="pb-clock">—</small>
   <div id="tl-busy" hidden></div>
-  <div id="follow-card" hidden><div class="fc-hd"><b id="fc-title"></b><button class="ghost" id="follow-stop" title="Stop following (Esc)">Stop</button></div><div id="fc-body"></div></div>
+  <div id="follow-card" hidden><div class="fc-hd"><b id="fc-title"></b><span class="fc-speed"><button class="ghost" id="fc-slower" title="Slower" aria-label="Slower">−</button><b id="fc-x">1×</b><button class="ghost" id="fc-faster" title="Faster" aria-label="Faster">+</button></span><button class="ghost" id="follow-stop" title="Stop following (Esc)">Stop</button></div><div id="fc-body"></div></div>
   <small id="playinfo"></small>
 </div>
 
@@ -1923,7 +1927,14 @@ const recWin = () => {   // the recorded minutes: the result's frames_window (th
 // own copy of every test car (probe_fwd_0.N drives Lingampally -> Nallagandla only, probe_fwd_1.N Nallagandla -> ISB Rd, ...).
 // The old button followed the westernmost copy on screen, which leaves the frames at Nallagandla, and jumped the camera back west.
 // Now it follows a test car's whole stitched trip (GET /runs/{id}/probes) from its first section, in the chosen direction.
+// following a test car: real time by default (the timer ticks like a clock); − / + on the card speed it up, the speed shown by the timer
+const RIDE_STEPS = [1, 2, 5, 10];
+let rideSpeed = 1;
+function setRideSpeed(x) { rideSpeed = x; $("fc-x").textContent = `${x}×`; $("fc-slower").disabled = x === RIDE_STEPS[0]; $("fc-faster").disabled = x === RIDE_STEPS[RIDE_STEPS.length - 1]; }
+$("fc-slower").onclick = () => setRideSpeed(RIDE_STEPS[Math.max(0, RIDE_STEPS.indexOf(rideSpeed) - 1)]);
+$("fc-faster").onclick = () => setRideSpeed(RIDE_STEPS[Math.min(RIDE_STEPS.length - 1, RIDE_STEPS.indexOf(rideSpeed) + 1)]);
 function followCar() {
+  setRideSpeed(1);
   if (!simShown() || !frames.length) return;
   const L = (probeList || []).filter(p => dirOf(p) === followDir);
   if (L.length) {   // the test car leaving Lingampally (or Lakdikapul) first inside the recorded minutes, else the nearest to them
@@ -2023,7 +2034,7 @@ function showCard(v, tNow) {   // the follow card: who, an A -> B progress bar w
   const bits = [];
   if (onRoute) { const a = short(points[loc.leg].name), b = short(points[loc.leg + 1]?.name); bits.push(`<b>${esc(rev ? `${b} → ${a}` : `${a} → ${b}`)}</b>`); }
   else if (loc) bits.push(`on a side road near ${esc(short(nearestJunction(v)[0]?.name))}`);
-  if (pr && pr.depart_s != null) bits.push(`${Math.max(0, Math.round((tNow - pr.depart_s) / 60))} min since ${from}${pr.total_s ? ` <span class="muted">of ~${Math.round(pr.total_s / 60)}</span>` : ""}`);
+  if (pr && pr.depart_s != null) bits.push(`<span class="ftimer">${clock(Math.max(0, tNow - pr.depart_s))}</span> min since ${from}${pr.total_s ? ` <span class="muted">of ~${Math.round(pr.total_s / 60)}</span>` : ""}${rideSpeed > 1 ? ` <span class="muted">(${rideSpeed}× speed)</span>` : ""}`);
   else if (onRoute && !rev) { const m = paceFromA(loc); if (m != null) bits.push(`≈ ${Math.round(m)} min from Lingampally at the simulated pace`); }
   bits.push(`${Math.round((v.speed || 0) * 3.6)} km/h`);
   const st = onStructure(v); if (st) bits.push(esc(st));
@@ -2098,7 +2109,7 @@ function startRide(id) {
   following = null; followLast = null; setOrbit(false);
   ride = { probe: pr, t: dep(pr), simT: null, inWin: false, skip: new Set([pr.id, ...(pr.segments || []).map(s => s.vehicle_id)]) };
   followBearing = map.getBearing();
-  // traffic plays in real time (TRAFFIC_SPEED); following a car's whole ~55 min trip runs at 3x (the hidden #speed select)
+  // traffic plays in real time (TRAFFIC_SPEED); following a car also starts in real time, − / + on the card speed it up (rideSpeed)
   setPlaying(true);
   $("playinfo").textContent = "";
   followUI(); rideTick(); render();
@@ -2274,7 +2285,7 @@ function frameStep() { return frames.length > 1 ? Math.max(0.1, frames[1].t - fr
 function tick(ts) {
   if (ride && simShown()) {   // following a test car's whole trip: its own clock, at the pill's speed
     const dt = lastTick ? (ts - lastTick) / 1000 : 0; lastTick = ts;
-    if (playing) ride.t += Math.min(dt, 0.25) * Number($("speed").value);
+    if (playing) ride.t += Math.min(dt, 0.25) * rideSpeed;
     const end = ride.probe.arrive_s ?? ride.probe.points[ride.probe.points.length - 1].t;
     if (ride.t >= end) { ride.t = end; rideTick(); stopRide(true); }
     else { rideTick(); render(); }
