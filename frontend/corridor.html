@@ -1392,7 +1392,16 @@ function addIv(iv) {   // one of each kind per junction; adding again updates it
   return note;
 }
 function setMergeNote(note) { $("iv-merge").hidden = !note; $("iv-merge").textContent = note; }
-function ivsChanged() { renderIvs(); updateMarkers(); renderJourney(); renderNcChange(); }
+function ivsChanged() {
+  renderIvs(); updateMarkers();
+  if (!interventions.length && changed) dropChanged();   // the last change removed: back to today's roads, one bar again
+  renderJourney(); renderNcChange();
+}
+function dropChanged() {
+  const wasPlaying = playingRun && runKey(playingRun) === runKey(changed);
+  changed = null; renderJunctions(); renderWatch(); render();
+  if (wasPlaying && base) watchRun(base);
+}
 $("iv-add").onclick = () => {
   setMergeNote(addIv({ junction_id: $("iv-j").value, kind: $("iv-kind").value, params: readParams() }));
   ivsChanged();
@@ -2089,7 +2098,7 @@ function startRide(id) {
   following = null; followLast = null; setOrbit(false);
   ride = { probe: pr, t: dep(pr), simT: null, inWin: false, skip: new Set([pr.id, ...(pr.segments || []).map(s => s.vehicle_id)]) };
   followBearing = map.getBearing();
-  // playback speed is fixed at 3x (the hidden #speed select) for traffic and for following a car
+  // traffic plays in real time (TRAFFIC_SPEED); following a car's whole ~55 min trip runs at 3x (the hidden #speed select)
   setPlaying(true);
   $("playinfo").textContent = "";
   followUI(); rideTick(); render();
@@ -2260,6 +2269,7 @@ function lighting(night) {
   return [new deck.LightingEffect({ ambient: new deck.AmbientLight({ intensity: night ? 0.7 : 1.1 }),
     sun: new deck.DirectionalLight({ color: night ? [160, 180, 230] : [255, 250, 240], intensity: night ? 0.9 : 1.6, direction: [-1, -2, -3] }) })];
 }
+const TRAFFIC_SPEED = 1;   // traffic plays in real time: the clock ticks like a clock and cars move at their simulated speed
 function frameStep() { return frames.length > 1 ? Math.max(0.1, frames[1].t - frames[0].t) : 1; }
 function tick(ts) {
   if (ride && simShown()) {   // following a test car's whole trip: its own clock, at the pill's speed
@@ -2270,7 +2280,7 @@ function tick(ts) {
     else { rideTick(); render(); }
   } else if (playing && frames.length) {
     const dt = lastTick ? (ts - lastTick) / 1000 : 0; lastTick = ts;
-    pos += dt * Number($("speed").value) / frameStep();   // 1× = real time, whatever the frame interval (real runs: ~2 s)
+    pos += dt * TRAFFIC_SPEED / frameStep();   // 1× = real time, whatever the frame interval (real runs: 4 s)
     const loading = stream && stream.readyState <= 1;   // frames still arriving: wait at the newest one instead of stopping
     if (pos >= frames.length - 1) { if (loading) pos = frames.length - 1; else if (nowcastOn()) pos = 0; else { pos = frames.length - 1; setPlaying(false); } }   // the now-cast loops
     showClock(); ncClock();
