@@ -46,8 +46,10 @@ corridor-wide change such as rain. Anything inside the noise is "no clear effect
 | Real data, typical day, the real 22.4 km route (header, trip strip "Real data · typical day") | 58.2 min | measured |
 | Real data on the 21.6 km the simulation drives | 56.2 min | measured |
 | Simulated today's roads (**Start engine**), typical day | 56.6 min | +0.7% vs real; every hour 06:00–23:00 within 3% |
-| Quick action: Flyover at Nallagandla (j01, 2 lanes, 600 m) | 54.6 min | −2.0 |
-| Quick action: Flyover at ISB Rd / DLF (j02, 2 lanes, 600 m) | 54.7 min | −1.9 |
+| Quick action: Underpass at Nallagandla (j01, 2 lanes, 600 m) | 54.5 min | −2.1 (the advisor's pick at Nallagandla) |
+| Quick action: Flyover at ISB Rd / DLF (j02, 2 lanes, 600 m) | 54.6 min | −1.9 |
+| Quick action: Signal timing at Rethibowli (j09, 120 s cycle, 70% green to the main road) | 55.8 min | −0.8 (no construction) |
+| Quick action: One-way side road at Rethibowli (j09, Inner Ring Road one-way in for 200 m) | 55.7 min | −0.9 (the advisor's pick at Rethibowli) |
 | Quick action: One flyover over Nanal Nagar + Rethibowli (j08, 1.2 km) | **53.5 min** | **−3.1** |
 | Quick action: Give DLF's side roads more green (j02 signal, 30% of green to the main road) | 57.3 min | +0.7 (ripple: the queue before DLF) |
 | Weather: Light rain, today's roads | 58.1 min | +1.5 |

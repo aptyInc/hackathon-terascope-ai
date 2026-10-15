@@ -313,7 +313,8 @@ def _caveats(runs: list[dict], weather: str | None) -> list[str]:
            f"Comparison noise: about +-{NOISE_SINGLE_MIN} min for a one-junction change, +-{NOISE_CORRIDOR_MIN} min for corridor-wide "
            "changes such as rain (seed test, sim/corridor README).",
            f"Cost classes are {COST_LADDER}.",
-           "Rain checks use the 'heavy_rain' what-if (July's wettest hours, estimated road-speed factors; not a cloudburst, no waterlogging)."]
+           "Rain checks use the 'heavy_rain' what-if (the wettest hours in the data, estimated road-speed factors; not a cloudburst; "
+           "reported water-logging hotspots slow further, reported not measured)."]
     if any(r.get("sample") for r in runs):
         out.insert(0, "MOCK_SIM=1: these are sample or illustrative numbers, not simulations. Re-run with MOCK_SIM=0 before any decision.")
     if weather:

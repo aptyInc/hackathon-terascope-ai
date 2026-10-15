@@ -219,6 +219,10 @@
   #follow-card { font-size: 12px; border-top: 1px solid var(--line); margin-top: 3px; padding-top: 6px; }
   #follow-card .fc-hd { display: flex; align-items: center; gap: 8px; justify-content: space-between; }
   #follow-card .fc-hd b { font-size: 12.5px; }
+  #follow-card .fc-speed { display: flex; align-items: center; gap: 4px; margin-left: auto; }
+  #follow-card .fc-speed button { padding: 0 8px; }
+  #follow-card .fc-speed b { min-width: 26px; text-align: center; font-variant-numeric: tabular-nums; }
+  #follow-card .ftimer { font-variant-numeric: tabular-nums; font-weight: 600; }
   #follow-card .fc-hd button { height: 24px; padding: 0 10px; font-size: 11.5px; flex: none; }
   .fbar { position: relative; height: 6px; margin: 9px 6px 4px; border-radius: 3px; background: oklch(1 0 0 / .12); }
   .fbar .fill { position: absolute; left: 0; top: 0; bottom: 0; border-radius: 3px; background: linear-gradient(90deg, var(--sim), var(--t-orange)); }
@@ -382,7 +386,7 @@
   </div>
   <small id="clock" class="pb-clock">—</small>
   <div id="tl-busy" hidden></div>
-  <div id="follow-card" hidden><div class="fc-hd"><b id="fc-title"></b><button class="ghost" id="follow-stop" title="Stop following (Esc)">Stop</button></div><div id="fc-body"></div></div>
+  <div id="follow-card" hidden><div class="fc-hd"><b id="fc-title"></b><span class="fc-speed"><button class="ghost" id="fc-slower" title="Slower" aria-label="Slower">−</button><b id="fc-x">1×</b><button class="ghost" id="fc-faster" title="Faster" aria-label="Faster">+</button></span><button class="ghost" id="follow-stop" title="Stop following (Esc)">Stop</button></div><div id="fc-body"></div></div>
   <small id="playinfo"></small>
 </div>
 
@@ -398,8 +402,10 @@
 
   <h2 style="margin-top:12px">Quick actions</h2>
   <div id="presets">
-    <button id="p-nallagandla" title="A 600 m, 2-lane flyover lifts the main road over the Nallagandla signal, the first signal of the trip. Replaces your list of changes, then simulates."><b>▶</b>Flyover at Nallagandla</button>
+    <button id="p-nallagandla" title="A 600 m, 2-lane underpass takes the main road under the Nallagandla signal, the first signal of the trip. Replaces your list of changes, then simulates."><b>▶</b>Underpass at Nallagandla</button>
     <button id="p-dlf" title="A 600 m, 2-lane flyover lifts the main road over the busy ISB Rd / DLF signal. Replaces your list of changes, then simulates."><b>▶</b>Flyover at ISB Rd / DLF</button>
+    <button id="p-rethibowli" title="Retime the Rethibowli signal: a 120 s cycle with 70% of the green to the main road. The cheapest fix: no construction. Replaces your list of changes, then simulates."><b>▶</b>Signal timing at Rethibowli</button>
+    <button id="p-rethibowli-oneway" title="Make the Inner Ring Road side road at Rethibowli one-way towards the junction for 200 m, so the signal needs one phase less. Signage and markings only. Replaces your list of changes, then simulates."><b>▶</b>One-way side road at Rethibowli</button>
     <button id="p-nanal" title="Nanal Nagar and Rethibowli are only 420 m apart, so one 1.2 km flyover clears both signals. Replaces your list of changes, then simulates."><b>▶</b>One flyover over Nanal Nagar + Rethibowli</button>
     <button id="p-dlf-retime" title="The DLF signal gives the side roads 70% of the green and the main road 30%. Watch the main-road queue spread back towards the junctions before it. Replaces your list of changes, then simulates."><b>▶</b>Give DLF's side roads more green (watch the ripple)</button>
   </div>
@@ -584,8 +590,10 @@ const NANAL_PAIR = ["j08", "j09"];   // Nanal Nagar and Rethibowli: about 420 m 
 const NANAL_FLYOVER = () => ({ junction_id: "j08", kind: "flyover", params: { lanes: 2, length_m: 1200 } });
 // Quick demos: the backend has these exact requests cached, so keep the params as they are.
 const PRESETS = {
-  "p-nallagandla": [{ junction_id: "j01", kind: "flyover", params: { lanes: 2, length_m: 600 } }],
+  "p-nallagandla": [{ junction_id: "j01", kind: "underpass", params: { lanes: 2, length_m: 600 } }],
   "p-dlf": [{ junction_id: "j02", kind: "flyover", params: { lanes: 2, length_m: 600 } }],
+  "p-rethibowli": [{ junction_id: "j09", kind: "signal_retime", params: { cycle_s: 120, corridor_green_share: 0.7 } }],
+  "p-rethibowli-oneway": [{ junction_id: "j09", kind: "one_way", params: { direction: "in" } }],
   "p-nanal": [NANAL_FLYOVER()],
   "p-dlf-retime": [{ junction_id: "j02", kind: "signal_retime", params: { cycle_s: 120, corridor_green_share: 0.3 } }],
 };
@@ -618,7 +626,8 @@ const markers = {};
 document.body.classList.add("badges-on");   // live delay badges on the junction pins (layer "Delay badges on junctions")
 // Visible text never names the data vendor: real data, simulated data. Labels that come from the API are passed through this.
 const plain = t => String(t ?? "").replace(/TomTom live/g, "real data · live").replace(/TomTom['’]s/g, "real data's").replace(/TomTom/g, "real data")
-  .replace(/typical July day/gi, "typical day").replace(/\bJuly 2026 average\b/g, "typical-day average").replace(/\bJuly( 2026)?\b/g, "typical day");
+  .replace(/July[’']s wettest hours/g, "the wettest hours in the data").replace(/, no waterlogging\)/g, "; reported water-logging hotspots slow further, reported not measured)")
+  .replace(/typical[- ]July[- ]day/gi, "typical day").replace(/\bJuly 2026 average\b/g, "typical-day average").replace(/\bJuly( 2026)?\b/g, "typical day");
 
 class HttpError extends Error { constructor(status, msg, detail) { super(msg); this.status = status; this.detail = detail; } }
 async function failure(path, r) {   // the server's own message: plain text, or FastAPI's {"detail": ...}
@@ -1387,7 +1396,16 @@ function addIv(iv) {   // one of each kind per junction; adding again updates it
   return note;
 }
 function setMergeNote(note) { $("iv-merge").hidden = !note; $("iv-merge").textContent = note; }
-function ivsChanged() { renderIvs(); updateMarkers(); renderJourney(); renderNcChange(); }
+function ivsChanged() {
+  renderIvs(); updateMarkers();
+  if (!interventions.length && changed) dropChanged();   // the last change removed: back to today's roads, one bar again
+  renderJourney(); renderNcChange();
+}
+function dropChanged() {
+  const wasPlaying = playingRun && runKey(playingRun) === runKey(changed);
+  changed = null; renderJunctions(); renderWatch(); render();
+  if (wasPlaying && base) watchRun(base);
+}
 $("iv-add").onclick = () => {
   setMergeNote(addIv({ junction_id: $("iv-j").value, kind: $("iv-kind").value, params: readParams() }));
   ivsChanged();
@@ -1909,7 +1927,14 @@ const recWin = () => {   // the recorded minutes: the result's frames_window (th
 // own copy of every test car (probe_fwd_0.N drives Lingampally -> Nallagandla only, probe_fwd_1.N Nallagandla -> ISB Rd, ...).
 // The old button followed the westernmost copy on screen, which leaves the frames at Nallagandla, and jumped the camera back west.
 // Now it follows a test car's whole stitched trip (GET /runs/{id}/probes) from its first section, in the chosen direction.
+// following a test car: real time by default (the timer ticks like a clock); − / + on the card speed it up, the speed shown by the timer
+const RIDE_STEPS = [1, 2, 5, 10];
+let rideSpeed = 1;
+function setRideSpeed(x) { rideSpeed = x; $("fc-x").textContent = `${x}×`; $("fc-slower").disabled = x === RIDE_STEPS[0]; $("fc-faster").disabled = x === RIDE_STEPS[RIDE_STEPS.length - 1]; }
+$("fc-slower").onclick = () => setRideSpeed(RIDE_STEPS[Math.max(0, RIDE_STEPS.indexOf(rideSpeed) - 1)]);
+$("fc-faster").onclick = () => setRideSpeed(RIDE_STEPS[Math.min(RIDE_STEPS.length - 1, RIDE_STEPS.indexOf(rideSpeed) + 1)]);
 function followCar() {
+  setRideSpeed(1);
   if (!simShown() || !frames.length) return;
   const L = (probeList || []).filter(p => dirOf(p) === followDir);
   if (L.length) {   // the test car leaving Lingampally (or Lakdikapul) first inside the recorded minutes, else the nearest to them
@@ -2009,7 +2034,7 @@ function showCard(v, tNow) {   // the follow card: who, an A -> B progress bar w
   const bits = [];
   if (onRoute) { const a = short(points[loc.leg].name), b = short(points[loc.leg + 1]?.name); bits.push(`<b>${esc(rev ? `${b} → ${a}` : `${a} → ${b}`)}</b>`); }
   else if (loc) bits.push(`on a side road near ${esc(short(nearestJunction(v)[0]?.name))}`);
-  if (pr && pr.depart_s != null) bits.push(`${Math.max(0, Math.round((tNow - pr.depart_s) / 60))} min since ${from}${pr.total_s ? ` <span class="muted">of ~${Math.round(pr.total_s / 60)}</span>` : ""}`);
+  if (pr && pr.depart_s != null) bits.push(`<span class="ftimer">${clock(Math.max(0, tNow - pr.depart_s))}</span> min since ${from}${pr.total_s ? ` <span class="muted">of ~${Math.round(pr.total_s / 60)}</span>` : ""}${rideSpeed > 1 ? ` <span class="muted">(${rideSpeed}× speed)</span>` : ""}`);
   else if (onRoute && !rev) { const m = paceFromA(loc); if (m != null) bits.push(`≈ ${Math.round(m)} min from Lingampally at the simulated pace`); }
   bits.push(`${Math.round((v.speed || 0) * 3.6)} km/h`);
   const st = onStructure(v); if (st) bits.push(esc(st));
@@ -2084,7 +2109,7 @@ function startRide(id) {
   following = null; followLast = null; setOrbit(false);
   ride = { probe: pr, t: dep(pr), simT: null, inWin: false, skip: new Set([pr.id, ...(pr.segments || []).map(s => s.vehicle_id)]) };
   followBearing = map.getBearing();
-  // playback speed is fixed at 3x (the hidden #speed select) for traffic and for following a car
+  // traffic plays in real time (TRAFFIC_SPEED); following a car also starts in real time, − / + on the card speed it up (rideSpeed)
   setPlaying(true);
   $("playinfo").textContent = "";
   followUI(); rideTick(); render();
@@ -2255,17 +2280,18 @@ function lighting(night) {
   return [new deck.LightingEffect({ ambient: new deck.AmbientLight({ intensity: night ? 0.7 : 1.1 }),
     sun: new deck.DirectionalLight({ color: night ? [160, 180, 230] : [255, 250, 240], intensity: night ? 0.9 : 1.6, direction: [-1, -2, -3] }) })];
 }
+const TRAFFIC_SPEED = 1;   // traffic plays in real time: the clock ticks like a clock and cars move at their simulated speed
 function frameStep() { return frames.length > 1 ? Math.max(0.1, frames[1].t - frames[0].t) : 1; }
 function tick(ts) {
   if (ride && simShown()) {   // following a test car's whole trip: its own clock, at the pill's speed
     const dt = lastTick ? (ts - lastTick) / 1000 : 0; lastTick = ts;
-    if (playing) ride.t += Math.min(dt, 0.25) * Number($("speed").value);
+    if (playing) ride.t += Math.min(dt, 0.25) * rideSpeed;
     const end = ride.probe.arrive_s ?? ride.probe.points[ride.probe.points.length - 1].t;
     if (ride.t >= end) { ride.t = end; rideTick(); stopRide(true); }
     else { rideTick(); render(); }
   } else if (playing && frames.length) {
     const dt = lastTick ? (ts - lastTick) / 1000 : 0; lastTick = ts;
-    pos += dt * Number($("speed").value) / frameStep();   // 1× = real time, whatever the frame interval (real runs: ~2 s)
+    pos += dt * TRAFFIC_SPEED / frameStep();   // 1× = real time, whatever the frame interval (real runs: 4 s)
     const loading = stream && stream.readyState <= 1;   // frames still arriving: wait at the newest one instead of stopping
     if (pos >= frames.length - 1) { if (loading) pos = frames.length - 1; else if (nowcastOn()) pos = 0; else { pos = frames.length - 1; setPlaying(false); } }   // the now-cast loops
     showClock(); ncClock();

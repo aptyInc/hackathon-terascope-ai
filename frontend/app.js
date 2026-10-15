@@ -8,7 +8,7 @@ window.CR = (() => {
   // or the month the saved averages come from. "measured (TomTom live flow)" -> "measured (real data · live)".
   const plain = s => String(s ?? "").replace(/TomTom live( flow)?/g, "real data · live")
     .replace(/TomTom(['’]s)?( (Traffic Stats|Junction Analytics|probe (data|vehicles)|hourly|data))?/g, "real data")
-    .replace(/([Tt])ypical July day/g, "$1ypical day").replace(/,? ?July 2026/g, "").replace(/\bJuly\b/g, "typical-day");
+    .replace(/([Tt])ypical[- ]July[- ]day/g, "$1ypical day").replace(/,? ?July 2026/g, "").replace(/\bJuly\b/g, "typical-day");
   // GET with a timeout. Errors carry .status (the HTTP status; undefined when the API is not reachable) and .detail.
   async function get(path, ms = 10000) {
     const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), ms);

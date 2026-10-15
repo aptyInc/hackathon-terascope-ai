@@ -26,7 +26,7 @@ window.planner = (() => {
   // Text from the API in plain words: "real data" (measured) or simulated, not the data provider's name or the month of the averages.
   const plain = s => String(s ?? "").replace(/TomTom live( flow)?/g, "real data · live")
     .replace(/TomTom(['’]s)?( (Traffic Stats|Junction Analytics|probe (data|vehicles)|hourly|data))?/g, "real data")
-    .replace(/([Tt])ypical July day/g, "$1ypical day").replace(/,? ?July 2026/g, "").replace(/\bJuly\b/g, "typical-day");
+    .replace(/([Tt])ypical[- ]July[- ]day/g, "$1ypical day").replace(/,? ?July 2026/g, "").replace(/\bJuly\b/g, "typical-day");
 
   // ---------- safe markdown: shared with decisions.html (md.js, loaded before this file) ----------
   const { md } = window.crMarkdown;
